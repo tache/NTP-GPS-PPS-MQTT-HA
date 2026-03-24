@@ -103,7 +103,35 @@ MQTT publish groups are controlled via environment variables in `monitoring.env`
 | `GPS_PUBLISH_POSITION` | `true` | Enable position data |
 | `GPS_PUBLISH_POSITION_INTERVAL` | `0` | Publish interval in seconds |
 
-See `monitoring.env.example` for all available options.
+See `monitoring.env.example` for all available options:
+
+```ini
+# MQTT Broker Configuration
+# Copy this file to /etc/monitoring/monitoring.env and fill in your values
+# Set permissions: chmod 600 /etc/monitoring/monitoring.env
+
+MQTT_BROKER=<host>
+MQTT_PORT=<port>
+MQTT_USERNAME=<username>
+MQTT_PASSWORD=<changeme>
+MQTT_TLS=false
+
+# GPS Monitor only
+GPSD_HOST=localhost
+GPSD_PORT=2947
+
+# GPS Monitor message groups — toggle and set publish interval per group
+# Set to false to disable a group entirely (removes sensors from HA)
+# Interval in seconds: 0 = publish every message, N = publish at most once every N seconds
+GPS_PUBLISH_SKY=true
+GPS_PUBLISH_SKY_INTERVAL=0
+
+GPS_PUBLISH_STATUS=true
+GPS_PUBLISH_STATUS_INTERVAL=0
+
+GPS_PUBLISH_POSITION=true
+GPS_PUBLISH_POSITION_INTERVAL=0
+```
 
 ## Testing
 
