@@ -41,6 +41,7 @@
 # Claude Generated: version 22 - Remove gps_pps_precision from DEPRECATED_SENSOR_IDS (still an active sensor)
 # Claude Generated: version 23 - Add _parse_interval() for validated interval env var parsing; clear stale position fields on no-fix
 # Claude Generated: version 24 - Security: preflight MQTT_CA_CERT path validation; empty string treated as unset; cap release/shm strings
+# Claude Generated: version 25 - Log previously silent excepts: TPV time parse errors and malformed GPSD JSON
 
 """
 GPSD to MQTT Bridge - Publishes GPS data to MQTT with Home Assistant auto-discovery.
@@ -684,8 +685,8 @@ class GPSDMQTTBridge:
                 if '.' in time_str:
                     time_str = time_str.split('.')[0] + 'Z'
                 tpv['time'] = time_str
-            except (ValueError, AttributeError):
-                pass
+            except (ValueError, AttributeError) as e:
+                print(f"  WARN  Could not parse TPV time field: {e}")
 
         # Direct float field mapping: (gpsd_key, state_key, decimal_places)
         for gpsd_key, state_key, decimals in (
@@ -888,8 +889,8 @@ class GPSDMQTTBridge:
                         elif msg_class not in known_ignored:
                             print(f"  ???  Unhandled class: {msg_class}")
 
-                    except json.JSONDecodeError:
-                        pass
+                    except json.JSONDecodeError as e:
+                        print(f"  WARN  Malformed JSON from GPSD: {e}")
 
         except KeyboardInterrupt:
             print("\nShutting down...")
