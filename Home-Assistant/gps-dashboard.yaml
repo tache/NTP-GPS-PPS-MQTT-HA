@@ -1,0 +1,283 @@
+views:
+  - type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: GPS Monitor
+            heading_style: title
+            icon: mdi:satellite-variant
+          - type: tile
+            grid_options:
+              columns: 6
+              rows: 1
+            entity: sensor.gps_monitor_gps_fix
+            name:
+              type: entity
+            vertical: false
+            features_position: inline
+          - type: tile
+            grid_options:
+              columns: 6
+              rows: 1
+            entity: sensor.gps_monitor_gps_satellites_visible
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            grid_options:
+              columns: 6
+              rows: 1
+            entity: sensor.gps_monitor_gps_satellites_used
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            grid_options:
+              columns: 6
+              rows: 1
+            entity: sensor.gps_monitor_gps_time
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+        column_span: 2
+      - type: grid
+        cards:
+          - type: heading
+            heading: Acquired Satellites
+            heading_style: title
+            icon: mdi:satellite-uplink
+          - type: custom:plotly-graph
+            entities:
+              - entity: sensor.gps_monitor_gps_satellites_detail
+                type: scatterpolar
+                r: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss >= 35).map(s => 90 - s.el)
+                theta: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss >= 35).map(s => s.az)
+                text: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss >= 35).map(s =>
+                  String(s.prn))
+                mode: markers+text
+                textposition: top right
+                name: Strong (used)
+                marker:
+                  color: green
+                  size: 12
+                  symbol: circle
+              - entity: sensor.gps_monitor_gps_satellites_detail
+                type: scatterpolar
+                r: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss >= 20 && s.ss < 35).map(s =>
+                  90 - s.el)
+                theta: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss >= 20 && s.ss < 35).map(s =>
+                  s.az)
+                text: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss >= 20 && s.ss < 35).map(s =>
+                  String(s.prn))
+                mode: markers+text
+                textposition: top right
+                name: Medium (used)
+                marker:
+                  color: orange
+                  size: 12
+                  symbol: circle
+              - entity: sensor.gps_monitor_gps_satellites_detail
+                type: scatterpolar
+                r: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss < 20).map(s => 90 - s.el)
+                theta: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss < 20).map(s => s.az)
+                text: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => s.used && s.ss < 20).map(s =>
+                  String(s.prn))
+                mode: markers+text
+                textposition: top right
+                name: Weak (used)
+                marker:
+                  color: yellow
+                  size: 12
+                  symbol: circle
+              - entity: sensor.gps_monitor_gps_satellites_detail
+                type: scatterpolar
+                r: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => !s.used).map(s => 90 - s.el)
+                theta: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => !s.used).map(s => s.az)
+                text: >
+                  $ex
+                  (hass.states['sensor.gps_monitor_gps_satellites_detail'].attributes.satellites
+                  || []).filter(s => !s.used).map(s => String(s.prn))
+                mode: markers+text
+                textposition: top right
+                name: Not used
+                marker:
+                  color: red
+                  size: 12
+                  symbol: circle-open
+            raw_plotly_config: true
+            refresh_interval: 5
+            layout:
+              polar:
+                bgcolor: '#323233'
+                angularaxis:
+                  direction: clockwise
+                  rotation: 90
+                  tickvals:
+                    - 0
+                    - 90
+                    - 180
+                    - 270
+                  ticktext:
+                    - 'N'
+                    - E
+                    - S
+                    - W
+                radialaxis:
+                  range:
+                    - 0
+                    - 90
+                  showticklabels: false
+              title: Satellite Skyview
+              showlegend: false
+              margin:
+                t: 40
+                b: 10
+                l: 10
+                r: 10
+          - type: markdown
+            content: |
+              <table width="100%">
+                <tr>
+                  <th>PRN</th>
+                  <th>El</th>
+                  <th>Az</th>
+                  <th>SNR</th>
+                  <th>Used</th>
+                  <th>Seen</th>
+                </tr>
+                {% for sat in state_attr('sensor.gps_monitor_gps_satellites_detail', 'satellites') | default([], true) %}
+                {% set color = 'red' if not sat.used else ('green' if sat.ss >= 35 else ('orange' if sat.ss >= 20 else 'yellow')) %}
+                <tr>
+                  <td><font color="{{ color }}">{{ sat.prn }}</font></td>
+                  <td><font color="{{ color }}">{{ sat.el }}</font></td>
+                  <td><font color="{{ color }}">{{ sat.az }}</font></td>
+                  <td><font color="{{ color }}">{{ sat.ss }}</font></td>
+                  <td><font color="{{ color }}">{{ 'Yes' if sat.used else 'No' }}</font></td>
+                  <td><font color="{{ color }}">{{ sat.seen }}s</font></td>
+                </tr>
+                {% endfor %}
+              </table>
+            grid_options:
+              rows: auto
+          - type: heading
+            heading: Precision
+            heading_style: title
+            icon: mdi:atom
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.gps_monitor_gps_hdop
+            name: GPS HDOP (Horizontal Dilution of Precision)
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.gps_monitor_gps_pdop
+            name: GPS PDOP (Position Dilution of Precision)
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.gps_monitor_gps_tdop
+            name: GPS TDOP (Time Dilution of Precision)
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.gps_monitor_gps_gdop
+            name: GPS GDOP (Geometric Dilution of Precision)
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.gps_monitor_gps_vdop
+            name: GPS VDOP (Vertical Dilution of Precision)
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.gps_monitor_gps_xdop
+            name: GPS XDOP (Longitudinal Dilution of Precision)
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.gps_monitor_gps_ydop
+            name: GPS YDOP (Latitudinal Dilution of Precision)
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.gps_monitor_pps_offset
+            name: GPS Latitudinal Dilution of Precisi PPS Clock Offset (ns)
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+        column_span: 2
+    max_columns: 2
+    cards: []
+    header:
+      card:
+        type: markdown
+        text_only: true
+        content: |
+          # GPSD Status

@@ -1,0 +1,6 @@
+# Runtime dependencies (all three monitor scripts)
+paho-mqtt>=2.0.0,<3
+psutil>=5.9.0
+
+# Development / testing
+pytest>=7.0.0

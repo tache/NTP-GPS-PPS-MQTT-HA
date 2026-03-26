@@ -1,0 +1,174 @@
+views:
+  - type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: System at a Glance
+            heading_style: title
+            icon: mdi:server-network-outline
+          - type: tile
+            entity: sensor.rpi_system_monitor_system_uptime
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.rpi_system_monitor_rtc_battery
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+        column_span: 2
+      - type: grid
+        cards:
+          - type: heading
+            heading: RPi Performace Monitoring
+            heading_style: title
+            icon: fab:raspberry-pi
+          - type: tile
+            entity: sensor.rpi_system_monitor_cpu_temperature
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.rpi_system_monitor_cpu_usage
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.rpi_system_monitor_memory_usage
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.rpi_system_monitor_disk_usage
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: heading
+            heading: RTC Module
+            heading_style: title
+            icon: mdi:chip
+          - type: tile
+            entity: sensor.rpi_system_monitor_system_time
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.rpi_system_monitor_rtc_iso_time
+            name:
+              type: entity
+            show_entity_picture: false
+            hide_state: false
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.rpi_system_monitor_rtc_drift
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.rpi_system_monitor_rtc_battery
+            vertical: false
+            features_position: bottom
+        column_span: 2
+      - type: grid
+        cards:
+          - type: heading
+            heading: Performance Trends
+            heading_style: title
+            icon: mdi:chart-line
+          - graph: line
+            type: sensor
+            entity: sensor.rpi_system_monitor_cpu_temperature
+            detail: 2
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+            name:
+              type: entity
+          - graph: line
+            type: sensor
+            entity: sensor.rpi_system_monitor_cpu_usage
+            detail: 2
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+            name:
+              type: entity
+          - graph: line
+            type: sensor
+            entity: sensor.rpi_system_monitor_memory_usage
+            detail: 2
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+            name:
+              type: entity
+          - graph: line
+            type: sensor
+            entity: sensor.system_monitor_disk_usage
+            detail: 2
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+            name:
+              type: entity
+          - graph: line
+            type: sensor
+            entity: sensor.rpi_system_monitor_swap_usage
+            detail: 2
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+            name: Swap Used (MB)
+          - graph: line
+            type: sensor
+            entity: sensor.rpi_system_monitor_memory_available
+            detail: 2
+            grid_options:
+              columns: 6
+              rows: 2
+            limits: {}
+            name: Memory Available (MB)
+          - graph: line
+            type: sensor
+            entity: sensor.rpi_system_monitor_load_average_1m
+            detail: 2
+            grid_options:
+              columns: 4
+              rows: 2
+            limits: {}
+            name:
+              type: entity
+          - graph: line
+            type: sensor
+            entity: sensor.rpi_system_monitor_load_average_5m
+            detail: 2
+            grid_options:
+              columns: 4
+              rows: 2
+            limits: {}
+            name:
+              type: entity
+        column_span: 2
+    max_columns: 2
+    cards: []
+    header:
+      card:
+        type: markdown
+        text_only: true
+        content: |
+          # System Status

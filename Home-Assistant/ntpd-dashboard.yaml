@@ -1,0 +1,114 @@
+views:
+  - type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: NTP Monitor
+            heading_style: title
+            icon: mdi:check-network-outline
+          - type: tile
+            entity: sensor.ntp_monitor_ntpd_jitter
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.ntp_monitor_ntpd_clock_jitter
+            name:
+              type: entity
+            icon: mdi:book-arrow-right
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.ntp_monitor_ntpd_offset
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.ntp_monitor_ntpd_clock_wander
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.ntp_monitor_ntpd_stratum
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.ntp_monitor_ntpd_reference
+            name:
+              type: entity
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.ntp_monitor_ntpd_synced
+            name:
+              type: entity
+            icon: mdi:clock-check-outline
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.ntp_monitor_ntpd_time
+            name:
+              type: entity
+            icon: mdi:key-star
+            vertical: false
+            features_position: bottom
+        column_span: 2
+      - type: grid
+        cards:
+          - type: heading
+            heading: Clock Quality
+            heading_style: title
+            icon: mdi:certificate-outline
+          - graph: line
+            type: sensor
+            entity: sensor.ntp_monitor_ntpd_jitter
+            detail: 2
+            grid_options:
+              columns: 12
+              rows: 2
+            limits: {}
+            name:
+              type: entity
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.ntp_monitor_ntpd_clock_jitter
+            grid_options:
+              columns: 12
+              rows: 2
+            name:
+              type: entity
+          - graph: line
+            type: sensor
+            detail: 2
+            entity: sensor.ntp_monitor_ntpd_offset
+            grid_options:
+              columns: 12
+              rows: 2
+            name:
+              type: entity
+          - graph: line
+            type: sensor
+            entity: sensor.ntp_monitor_ntpd_clock_wander
+            detail: 2
+            grid_options:
+              columns: 12
+              rows: 2
+            limits: {}
+            name:
+              type: entity
+        column_span: 2
+    max_columns: 2
+    cards: []
+    header:
+      card:
+        type: markdown
+        text_only: true
+        content: |
+          # NTPD Status
