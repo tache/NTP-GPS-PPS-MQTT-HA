@@ -5,8 +5,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-
+updates:
   - package-ecosystem: "pip"
+    # Location of the package configs in the repository
     directory: "/"
     schedule:
+      # Check for updates daily
       interval: "weekly"
+    # Limit the number of open pull requests
+    open-pull-requests-limit: 10
