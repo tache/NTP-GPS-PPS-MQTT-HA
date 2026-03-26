@@ -1,0 +1,17 @@
+# NTPd Monitor Configuration
+# Deploy to /etc/monitoring/ntpd_monitor.conf
+# Set permissions: chmod 600 /etc/monitoring/ntpd_monitor.conf
+
+MQTT_BROKER=<host>
+MQTT_PORT=<port>
+MQTT_USERNAME=<username>
+MQTT_PASSWORD=<changeme>
+MQTT_TLS=true
+# MQTT_CA_CERT: path to a PEM CA certificate for TLS peer verification.
+# Leave commented out to use the system trust store (e.g. Let's Encrypt certs work without this).
+# Required only when your broker uses a self-signed or private CA certificate.
+# Example: MQTT_CA_CERT=/etc/ssl/certs/my-broker-ca.pem
+# MQTT_CA_CERT=
+
+# Publish interval in seconds
+NTP_PUBLISH_INTERVAL=30
