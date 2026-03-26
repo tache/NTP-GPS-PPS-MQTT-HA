@@ -5,7 +5,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-updates:
+      
   - package-ecosystem: "pip"
     # Location of the package configs in the repository
     directory: "/"
