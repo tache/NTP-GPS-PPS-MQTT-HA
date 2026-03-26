@@ -4,47 +4,48 @@ Home Assistant status dashboard for a GPS/PPS-disciplined NTP server running on 
 
 ## Overview
 
-A collection of Python bridge scripts that read live data from a GPS receiver, NTP daemon, and system health metrics — then publish everything to Home Assistant via MQTT with full auto-discovery. The end goal is an ESP32-based hardware display showing GPS satellite and time data in real time.
+A collection of Python bridge scripts that read live data from a GPS receiver, NTP daemon, and system health metrics — then publish everything to Home Assistant via MQTT with full auto-discovery.
+
+![Acquired Satellites Dashboard](images/acquired-satellites-dashboard.png)
 
 ## Architecture
 
 ```
-RPi: GPSD   → gps_mqtt.py    → MQTT → HA device: "GPS Monitor"
-RPi: psutil → system_mqtt.py → MQTT → HA device: "RPi System Monitor"
-RPi: ntpq   → ntp_mqtt.py    → MQTT → HA device: "NTP Monitor"
+RPi: GPSD   → gpsd_monitor.py    → MQTT → HA device: "GPS Monitor"
+RPi: psutil → system_monitor.py  → MQTT → HA device: "RPi System Monitor"
+RPi: ntpq   → ntpd_monitor.py    → MQTT → HA device: "NTP Monitor"
 ```
 
 ## Scripts
 
 | Script | Purpose | Runs on |
 |--------|---------|---------|
-| `gps_monitor.py` | Terminal display — live satellite table + TPV | Mac (dev/test) |
-| `gps_mqtt.py` | GPSD → MQTT bridge with HA auto-discovery | RPi (systemd) |
-| `system_mqtt.py` | System health → MQTT bridge with HA auto-discovery | RPi (systemd) |
-| `ntp_mqtt.py` | NTPd status → MQTT bridge with HA auto-discovery | RPi (systemd) |
+| `gpsd_monitor.py` | GPSD → MQTT bridge with HA auto-discovery | RPi (systemd) |
+| `system_monitor.py` | System health → MQTT bridge with HA auto-discovery | RPi (systemd) |
+| `ntpd_monitor.py` | NTPd status → MQTT bridge with HA auto-discovery | RPi (systemd) |
 
 ## Infrastructure
 
 | Component | Details |
 |-----------|---------|
-| GPS Server | RPi hostname `hawk`, IP `192.168.1.167`, Raspbian |
+| GPS Server | RPi hostname `<your-hostname>`, Raspbian |
 | GPS Device | `/dev/ttyAMA0` (MTK-3301, GPS-only) |
-| GPSD Version | 3.17 |
-| MQTT Broker | Home Assistant at `homeassistant.iot.home.arpa:8883` (TLS) |
+| GPSD Version | 3.27.5 |
+| MQTT Broker | Home Assistant at `<your-ha-host>:8883` (TLS) |
 
 ## Requirements
 
 - Python 3.6+
 - `gps_monitor.py` — no external dependencies (standard library only)
-- `gps_mqtt.py`, `system_mqtt.py`, `ntp_mqtt.py` — require `paho-mqtt` and `psutil`
+- `gpsd_monitor.py`, `system_monitor.py`, `ntpd_monitor.py` — require `paho-mqtt` and `psutil`
 
 ## Usage
 
 ### Terminal Monitor (Mac / dev)
 
 ```bash
-./gps_monitor.py                  # default host 192.168.1.167
-./gps_monitor.py 192.168.1.100    # custom host
+./gps_monitor.py                  # default host localhost
+./gps_monitor.py 192.168.x.x      # custom host
 ```
 
 ### RPi Services
@@ -52,8 +53,10 @@ RPi: ntpq   → ntp_mqtt.py    → MQTT → HA device: "NTP Monitor"
 The three MQTT bridge scripts run as systemd services on the RPi. Copy and fill in credentials first:
 
 ```bash
-sudo cp monitoring.env.example /etc/monitoring/monitoring.env
-sudo chmod 600 /etc/monitoring/monitoring.env
+sudo cp gpsd_monitor.conf.example /etc/monitoring/gpsd_monitor.conf
+sudo cp system_monitor.conf.example /etc/monitoring/system_monitor.conf
+sudo cp ntpd_monitor.conf.example /etc/monitoring/ntpd_monitor.conf
+sudo chmod 600 /etc/monitoring/*.conf
 ```
 
 Each service uses this unit file pattern (save to `/etc/systemd/system/<service-name>.service`):
@@ -65,7 +68,7 @@ After=network.target
 # Also add: gpsd.service — for gps-monitor.service only
 
 [Service]
-EnvironmentFile=/etc/monitoring/monitoring.env
+EnvironmentFile=/etc/monitoring/<service>.conf
 ExecStart=/usr/bin/python3 /etc/monitoring/<script>.py
 Restart=on-failure
 RestartSec=5
@@ -92,46 +95,65 @@ journalctl -u gps-monitor.service -f
 
 ## Configuration
 
-MQTT publish groups are controlled via environment variables in `monitoring.env`:
+MQTT publish groups in `gpsd_monitor.py` align with GPSD message classes. Each group can be toggled and rate-limited independently:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `GPS_PUBLISH_SKY` | `true` | Enable satellite sky data |
-| `GPS_PUBLISH_SKY_INTERVAL` | `0` | Publish interval in seconds (0 = every message) |
-| `GPS_PUBLISH_STATUS` | `true` | Enable GPS status/DOP data |
-| `GPS_PUBLISH_STATUS_INTERVAL` | `0` | Publish interval in seconds |
-| `GPS_PUBLISH_POSITION` | `true` | Enable position data |
-| `GPS_PUBLISH_POSITION_INTERVAL` | `0` | Publish interval in seconds |
+| `GPS_PUBLISH_VERSION` | `true` | GPSD version and protocol |
+| `GPS_PUBLISH_VERSION_INTERVAL` | `0` | Publish interval in seconds (0 = every message) |
+| `GPS_PUBLISH_SKY` | `true` | Satellite data and all DOPs |
+| `GPS_PUBLISH_SKY_INTERVAL` | `0` | Publish interval in seconds |
+| `GPS_PUBLISH_TPV` | `true` | Fix, position, speed, errors |
+| `GPS_PUBLISH_TPV_INTERVAL` | `0` | Publish interval in seconds |
+| `GPS_PUBLISH_TOFF` | `true` | Serial time offset (GPS vs system clock) |
+| `GPS_PUBLISH_TOFF_INTERVAL` | `0` | Publish interval in seconds |
+| `GPS_PUBLISH_PPS` | `true` | PPS pulse timing data |
+| `GPS_PUBLISH_PPS_INTERVAL` | `0` | Publish interval in seconds |
 
-See `monitoring.env.example` for all available options:
+See `gpsd_monitor.conf.example` for all available options.
 
-```ini
-# MQTT Broker Configuration
-# Copy this file to /etc/monitoring/monitoring.env and fill in your values
-# Set permissions: chmod 600 /etc/monitoring/monitoring.env
+### system_monitor.py
 
-MQTT_BROKER=<host>
-MQTT_PORT=<port>
-MQTT_USERNAME=<username>
-MQTT_PASSWORD=<changeme>
-MQTT_TLS=false
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SYSTEM_PUBLISH_INTERVAL` | `30` | Seconds between publishes |
+| `MQTT_BROKER` | *(required)* | MQTT broker hostname |
+| `MQTT_PORT` | `8883` | MQTT broker port |
+| `MQTT_USERNAME` | *(required)* | MQTT username |
+| `MQTT_PASSWORD` | *(required)* | MQTT password |
+| `MQTT_TLS` | `true` | Enable TLS (`false` to disable) |
+| `MQTT_CA_CERT` | *(empty)* | Path to CA cert file; empty = system trust store |
 
-# GPS Monitor only
-GPSD_HOST=localhost
-GPSD_PORT=2947
+See `system_monitor.conf.example` for a template.
 
-# GPS Monitor message groups — toggle and set publish interval per group
-# Set to false to disable a group entirely (removes sensors from HA)
-# Interval in seconds: 0 = publish every message, N = publish at most once every N seconds
-GPS_PUBLISH_SKY=true
-GPS_PUBLISH_SKY_INTERVAL=0
+### ntpd_monitor.py
 
-GPS_PUBLISH_STATUS=true
-GPS_PUBLISH_STATUS_INTERVAL=0
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NTP_PUBLISH_INTERVAL` | `30` | Seconds between publishes |
+| `MQTT_BROKER` | *(required)* | MQTT broker hostname |
+| `MQTT_PORT` | `8883` | MQTT broker port |
+| `MQTT_USERNAME` | *(required)* | MQTT username |
+| `MQTT_PASSWORD` | *(required)* | MQTT password |
+| `MQTT_TLS` | `true` | Enable TLS (`false` to disable) |
+| `MQTT_CA_CERT` | *(empty)* | Path to CA cert file; empty = system trust store |
 
-GPS_PUBLISH_POSITION=true
-GPS_PUBLISH_POSITION_INTERVAL=0
-```
+See `ntpd_monitor.conf.example` for a template.
+
+## MQTT Topics
+
+| Topic | Source | Content |
+|-------|--------|---------|
+| `gps_monitor/version` | VERSION | GPSD release, protocol version |
+| `gps_monitor/sky` | SKY | Satellites, DOPs (HDOP/VDOP/PDOP/etc.) |
+| `gps_monitor/tpv` | TPV | Fix mode, position, speed, track, errors |
+| `gps_monitor/toff` | TOFF | Serial latency offset, raw clock fields |
+| `gps_monitor/pps` | PPS | PPS timing offset, precision, SHM segment |
+| `gps_monitor/availability` | bridge | `online` / `offline` |
+| `system_monitor/state` | system_monitor.py | CPU%, CPU temp, memory% + detail (MB), swap% + detail (MB), disk% + detail (GB), load avg, uptime, RTC time/date/battery |
+| `system_monitor/availability` | bridge | `online` / `offline` |
+| `ntp_monitor/state` | ntpd_monitor.py | NTP sync, stratum, offset, jitter |
+| `ntp_monitor/availability` | bridge | `online` / `offline` |
 
 ## Testing
 
@@ -139,9 +161,9 @@ GPS_PUBLISH_POSITION_INTERVAL=0
 python3 -m pytest tests/ -v
 ```
 
-## Next Phase — ESP32 Display
+## AI Usage
 
-The ESP32 will subscribe to `gps_monitor/sky`, `gps_monitor/status`, and `gps_monitor/position` over WiFi and drive an IPS LCD or e-ink display. Candidate libraries: `TFT_eSPI` (ILI9341), `PubSubClient`/`ESP-MQTT`, `ArduinoJson`.
+A majority of this repository was generated with Claude Code as an experiment in agent-based coding workflows.
 
 ## License
 
