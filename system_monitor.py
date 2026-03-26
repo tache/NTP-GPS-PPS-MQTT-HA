@@ -34,6 +34,7 @@
 # Claude Generated: version 17 - Add sys_time, sys_epoch, rtc_epoch, rtc_iso, rtc_drift fields
 # Claude Generated: version 18 - Add _parse_interval() for validated interval env var parsing
 # Claude Generated: version 19 - Security: preflight MQTT_CA_CERT path validation; empty string treated as unset
+# Claude Generated: version 20 - Fix ruff lint: sort imports (paho before psutil), remove redundant 'r' mode from open() calls
 
 """
 System Monitor MQTT Bridge - Publishes RPi system health metrics
@@ -48,8 +49,8 @@ import subprocess
 import sys
 import time
 
-import psutil
 import paho.mqtt.client as mqtt
+import psutil
 
 # NOTE: _parse_port() and _parse_interval() are intentionally duplicated across the three
 # monitor scripts. Each is deployed as a standalone file on the RPi and must be self-contained.
@@ -406,7 +407,7 @@ def get_uptime():
 def get_rtc_time():
     """RTC time from sysfs. Returns time string or None."""
     try:
-        with open('/sys/class/rtc/rtc0/time', 'r') as f:
+        with open('/sys/class/rtc/rtc0/time') as f:
             return f.read().strip()
     except (FileNotFoundError, PermissionError, OSError):
         return None
@@ -415,7 +416,7 @@ def get_rtc_time():
 def get_rtc_date():
     """RTC date from sysfs. Returns date string or None."""
     try:
-        with open('/sys/class/rtc/rtc0/date', 'r') as f:
+        with open('/sys/class/rtc/rtc0/date') as f:
             return f.read().strip()
     except (FileNotFoundError, PermissionError, OSError):
         return None
@@ -453,7 +454,7 @@ def get_rtc_epoch():
     """RTC time as Unix epoch integer from sysfs.
     Returns None on FileNotFoundError, PermissionError, ValueError, or OSError."""
     try:
-        with open('/sys/class/rtc/rtc0/since_epoch', 'r') as f:
+        with open('/sys/class/rtc/rtc0/since_epoch') as f:
             return int(f.read().strip())
     except (FileNotFoundError, PermissionError, ValueError, OSError):
         return None
