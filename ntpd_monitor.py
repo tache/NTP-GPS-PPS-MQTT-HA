@@ -315,13 +315,26 @@ def publish_discovery(client):
         client.publish(config_topic, json.dumps(config_payload), retain=True)
 
 
+def _on_connect(client, userdata, connect_flags, reason_code, properties):
+    """Re-publish discovery configs and availability on every (re)connect.
+
+    Runs on the initial connect and again on any automatic reconnect (e.g.
+    after a broker restart), so retained state isn't lost until the process
+    itself is restarted.
+    """
+    publish_discovery(client)
+    client.publish(AVAILABILITY_TOPIC, 'online', retain=True)
+    print(f"Connected to MQTT at {MQTT_BROKER}:{MQTT_PORT}")
+
+
 def connect_mqtt(broker, port, username, password, tls, ca_cert):
-    """Connect to broker and publish discovery configs."""
+    """Connect to broker; discovery configs and availability are (re)published via on_connect."""
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f'ntp_monitor_bridge_{socket.gethostname()}')
     client.username_pw_set(username, password)
     if tls:
         client.tls_set(ca_certs=ca_cert)   # None = verify against system trust store
     client.will_set(AVAILABILITY_TOPIC, 'offline', retain=True)
+    client.on_connect = _on_connect
 
     try:
         client.connect(broker, port, keepalive=60)
@@ -330,9 +343,6 @@ def connect_mqtt(broker, port, username, password, tls, ca_cert):
         print(f"MQTT connection failed: {e}")
         return None
 
-    publish_discovery(client)
-    client.publish(AVAILABILITY_TOPIC, 'online', retain=True)
-    print(f"Connected to MQTT at {broker}:{port}")
     return client
 
 

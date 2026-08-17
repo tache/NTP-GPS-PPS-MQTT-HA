@@ -580,22 +580,13 @@ class GPSDMQTTBridge:
         # Tracks first-seen timestamp per PRN for the seen_secs field
         self.satellite_first_seen = {}
 
-    def _connect_mqtt(self):
-        """Connect to broker, clear deprecated sensors, register LWT, and publish discovery configs."""
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f'gps_monitor_bridge_{socket.gethostname()}')
-        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-        if MQTT_TLS:
-            client.tls_set(ca_certs=MQTT_CA_CERT)   # None = verify against system trust store
-        # Last Will — broker publishes this automatically if we disconnect ungracefully
-        client.will_set(AVAILABILITY_TOPIC, 'offline', retain=True)
+    def _on_mqtt_connect(self, client, userdata, connect_flags, reason_code, properties):
+        """Re-publish discovery configs and availability on every (re)connect.
 
-        try:
-            client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-            client.loop_start()
-        except Exception as e:
-            print(f"MQTT connection failed: {e}")
-            return False
-
+        Runs on the initial connect and again on any automatic reconnect (e.g.
+        after a broker restart), so retained state isn't lost until the
+        process itself is restarted.
+        """
         # Clear discovery configs for sensors removed in this version
         for sensor_id in DEPRECATED_SENSOR_IDS:
             config_topic = f"{DISCOVERY_PREFIX}/sensor/{sensor_id}/config"
@@ -630,6 +621,24 @@ class GPSDMQTTBridge:
 
         client.publish(AVAILABILITY_TOPIC, 'online', retain=True)
         print(f"Connected to MQTT at {MQTT_BROKER}:{MQTT_PORT}")
+
+    def _connect_mqtt(self):
+        """Connect to broker and register LWT; discovery configs and availability are (re)published via on_connect."""
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f'gps_monitor_bridge_{socket.gethostname()}')
+        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+        if MQTT_TLS:
+            client.tls_set(ca_certs=MQTT_CA_CERT)   # None = verify against system trust store
+        # Last Will — broker publishes this automatically if we disconnect ungracefully
+        client.will_set(AVAILABILITY_TOPIC, 'offline', retain=True)
+        client.on_connect = self._on_mqtt_connect
+
+        try:
+            client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+            client.loop_start()
+        except Exception as e:
+            print(f"MQTT connection failed: {e}")
+            return False
+
         self.mqtt_client = client
         return True
 
