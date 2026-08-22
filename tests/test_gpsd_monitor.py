@@ -445,13 +445,14 @@ class TestDiscoveryConfig(unittest.TestCase):
         self.bridge = gpsd_monitor.GPSDMQTTBridge()
 
     def _run_connect_mqtt_with_mock(self):
-        """Run _connect_mqtt with the MQTT client mocked out."""
+        """Run _connect_mqtt with the MQTT client mocked out, then fire on_connect as paho would."""
         mock_client = MagicMock()
         mock_client.connect.return_value = None
         mock_client.loop_start.return_value = None
 
         with patch('gpsd_monitor.mqtt.Client', return_value=mock_client):
             self.bridge._connect_mqtt()
+            mock_client.on_connect(mock_client, None, {}, 0, None)
 
         return mock_client
 
@@ -751,6 +752,7 @@ class TestDeprecatedSensorClearing(unittest.TestCase):
         mock_client.loop_start.return_value = None
         with patch('gpsd_monitor.mqtt.Client', return_value=mock_client):
             self.bridge._connect_mqtt()
+            mock_client.on_connect(mock_client, None, {}, 0, None)
         return mock_client
 
     def test_deprecated_ids_get_empty_retained_publish(self):
